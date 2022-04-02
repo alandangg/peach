@@ -345,4 +345,4 @@ if __name__ == '__main__':
     # print("yoffset", yadd)
     # print("x and y diff", xgap - ygap)
     
-    o3d.visualization.draw_geometries(tree).add_child
+    o3d.visualization.draw_geometries(tree)
