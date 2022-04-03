@@ -101,7 +101,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QSlider" name="horizontalSlider">
+      <widget class="QSlider" name="prune_slider">
        <property name="minimum">
         <number>20</number>
        </property>

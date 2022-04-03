@@ -21,36 +21,47 @@ class UI(QMainWindow):
         self.prunebutton = self.findChild(QPushButton, "prune_button")
         self.pcdlabel = self.findChild(QLabel, "pcd_label")
         self.prunemethod = self.findChild(QComboBox, "prunemethods_combobox")
+        self.pruneslider = self.findChild(QSlider, "prune_slider")
+        
 
         
         self.pcdbutton.clicked.connect(self.pcdClicker)
+       
         self.cylinderbutton.clicked.connect(self.cylinderClicker)
         self.databutton.clicked.connect(self.dataClicker)
         self.prunebutton.clicked.connect(self.pruneClicker)
         self.prunemethod.currentIndexChanged.connect(self.prunemethodSelect)
+        self.pruneslider.valueChanged.connect(self.silderGetter)
 
-        
-    
-       
-
-        
 
         self.show()
 
     def prunemethodSelect(self):
         pruneSelect = self.prunemethod.currentText()
-        print(pruneSelect)
+        #print(pruneSelect)
         return pruneSelect
+    
+    def silderGetter(self):
+        slider = self.pruneslider.value()
+        #print(slider)
+        return slider
 
-  
-
-
+    
+   
     def pcdClicker(self):
         
         # Open File Dialog
         fpcd = QFileDialog.getOpenFileName(self, "Open Point Cloud Data", "", "All Files (*)")
         if fpcd:
+            file1 = open("pcdPath.txt", "w") 
+            file1.write(str(fpcd[0]))
+            file1.close
             self.pcdbutton.setText(str(fpcd[0]))
+            
+
+    
+            
+      
             
            
     def cylinderClicker(self):
@@ -58,7 +69,12 @@ class UI(QMainWindow):
         
         fcylinder = QFileDialog.getOpenFileName(self, "Open Cylinder Data", "", "All Files (*)")
         if fcylinder:
+            file1 = open("cylinderPath.txt", "w")
+            file1.write(str(fcylinder[0]))
+            file1.close
             self.cylinderbutton.setText(str(fcylinder[0]))
+            
+          
             
         
             
@@ -67,7 +83,11 @@ class UI(QMainWindow):
         
         fdata = QFileDialog.getOpenFileName(self, "Open Tree Data", "", "All Files (*)")
         if fdata:
+            file1 = open("dataPath.txt", "w")
+            file1.write(str(fdata[0]))
+            file1.close
             self.databutton.setText(str(fdata[0]))
+           
         
            
 

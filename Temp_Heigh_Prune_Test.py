@@ -4,8 +4,6 @@ import pandas as pd
 import open3d as o3d
 import copy
 import matplotlib.pyplot as plt
-import sys
-
 
 def getRadius(df, x):
     currentBranch = df['radius (m)'][x]
@@ -26,19 +24,8 @@ def getRayHits(primitive_list, rays, show_im = True):
 
 treeDic = {}
 
-file1 = open("pcdPath.txt", "r") 
-pcdPath = file1.readline()
-file1 = open("cylinderPath.txt", "r")
-cylinderPath = file1.readline()
-file1 = open("dataPath.txt", "r")
-dataPath = file1.readline()
-file1.close()
-
-
-
-
-df = pd.read_csv(cylinderPath) ## ADJUST THESE FOR DIFFERENT TREES
-treeData = pd.read_csv(dataPath)   ## ADJUST THESE FOR DIFFERENT TREES
+df = pd.read_csv("germ11bCylinder.csv") ## ADJUST THESE FOR DIFFERENT TREES
+treeData = pd.read_csv("germ11bData.csv")   ## ADJUST THESE FOR DIFFERENT TREES
 
 def findCylinders(index):
         cylinders = []
@@ -52,24 +39,15 @@ for num, val in df['branch'].iteritems():
     else:
         treeDic[val].append(num)
 
-
-def runner(uiInit):
-    
-    prunemethod = uiInit.prunemethodSelect()
-    prunepercentage = uiInit.silderGetter()
-
-    print(prunepercentage)
-    print(prunemethod)
-
-    
+if __name__ == '__main__':
     # Create raycasting scene
     # We will need this later for checking occupancy
     scene = o3d.t.geometry.RaycastingScene()
 
     #largest gap so far is .4ish
+
     
-    
-   
+
     TreeHeight = treeData["Data"][3]
     CrownDiamAve = treeData["Data"][14]
     CrownDiamMax = treeData["Data"][15]
@@ -82,7 +60,7 @@ def runner(uiInit):
     tree = []
     bases = [] # Store the base of the cylinder
     max_branch = df['branch'].max()
-    pcdFile = pcdPath
+    pcdFile = 'germ11b.xyzrgb'
     pcd = o3d.io.read_point_cloud(pcdFile) # load file
     pcd_centroid = pcd.get_center() # get centroid
     centroid = np.array([0., 0., 0.])
@@ -145,37 +123,6 @@ def runner(uiInit):
         bases.append(dpoints)
         tree.append(copy.deepcopy(cylinder))
 
-    #### SETUP ####
-    res = 1200 ## resolution
-    center = 3.
-    width = 2.5 ## This represents the grid on top of the tree that you are shooting from
-    z_ht = 10. # this doesn't matter much so long it is above the tree height
-    marks = np.linspace(center-width, center+width, res)
-    ray_dir = -np.array([center, center, z_ht])
-    ray_dir /= np.linalg.norm(ray_dir)
-    
-    mesh_x, mesh_y = np.meshgrid(marks, marks)
-    rays = np.stack((mesh_x,
-                     mesh_y,
-                     np.ones((res, res))*10,
-                     np.ones((res, res))*ray_dir[0],
-                     np.ones((res, res))*ray_dir[1],
-                     np.ones((res, res))*ray_dir[2]),
-                    axis = 2
-                   )
-
-
-    rays = o3d.core.Tensor(rays, dtype=o3d.core.Dtype.Float32)
-
-    #### PART I - BEFORE PRUNING ####
-    #### Get scene hits before pruning 
-    zero_fore, primhit_fore = getRayHits(tree, rays)
-    print("Before pruning: ", primhit_fore.item())
-
-
-
-    
-
     highestx = df['x'].max()
     lowestx = df['x'].min()
     highesty = df['y'].max()
@@ -197,7 +144,7 @@ def runner(uiInit):
     if meshType == "cone":
         defaultxscale = 2.3
         defaultyscale = 2.3
-        defaultzscale = 1.7
+        defaultzscale = 1.5
     elif meshType == "ellipsoid":
         defaultxscale = 2.7
         defaultyscale = 2.7
@@ -219,57 +166,21 @@ def runner(uiInit):
         if (ygap - xgap) >= yaddthreshold:
             yadd = (xgap - ygap) / 2.2
 
-    if meshType == "ellipsoid":
-        treeCentroid = []
-        xx = df.x[2] - pcd_centroid[0] + xcentroidadjust
-        yy = df.y[2] - pcd_centroid[1] + ycentroidadjust
-        zz = df.z[2] + (TreeHeight/1.4) - pcd_centroid[2] + zcentroidadjust
-        
-        treeCentroid.append(xx)
-        treeCentroid.append(yy)
-        treeCentroid.append(zz)
-        xellipsoid = (CrownDiamAve / (defaultxscale + xscaling)) + xadd
-        yellipsoid = (CrownDiamAve / (defaultyscale + yscaling)) + yadd
-        zellipsoid = TreeHeight / (defaultzscale + zscaling)
-        ellipsoid = o3d.geometry.TriangleMesh.create_sphere(1)
-        ellipsoid.vertices = o3d.utility.Vector3dVector(np.asarray(ellipsoid.vertices) * np.array([xellipsoid, yellipsoid, zellipsoid]))
-        ellipsoid = ellipsoid.translate((treeCentroid))
-        scene.add_triangles(o3d.t.geometry.TriangleMesh.from_legacy(ellipsoid))
-        shapeAppend = ellipsoid
-    elif meshType == "cone":
-        treeCentroid = []
-        xx = df.x[2] - pcd_centroid[0] + xcentroidadjust
-        yy = df.y[2] - pcd_centroid[1] + ycentroidadjust
-        zz = df.z[2] + (TreeHeight/1.4) - pcd_centroid[2] -0.01 + zcentroidadjust
-        treeCentroid.append(xx)
-        treeCentroid.append(yy)
-        treeCentroid.append(zz)
-        xcone = (CrownDiamAve / (defaultxscale + xscaling)) + xadd
-        ycone = (CrownDiamAve / (defaultyscale + yscaling)) + yadd
-        zcone = TreeHeight / (defaultzscale + zscaling)
-        cone = o3d.geometry.TriangleMesh.create_cone(1, 1)
-        cone.vertices = o3d.utility.Vector3dVector(np.asarray(cone.vertices) * np.array([xcone, ycone, zcone]))
-        R = cone.get_rotation_matrix_from_xyz((np.pi, 0, np.pi / 4))
-        cone.rotate(R, center=(0, 0, 0))
-        cone = cone.translate((treeCentroid))
-        scene.add_triangles(o3d.t.geometry.TriangleMesh.from_legacy(cone))
-        shapeAppend = cone
-
     zeroOrderBranches = []
     oneOrderBranches = []
     notZeroOneOrderBranches = []
 
     for idx, base in enumerate(bases):
         if getBranchOrder(df, idx) == 0:
-            zeroOrderBranches.append(base)
+            zeroOrderBranches.append((base, idx))
 
     for idx, base in enumerate(bases):
         if getBranchOrder(df, idx) == 1:
-            oneOrderBranches.append(base)
+            oneOrderBranches.append((base, idx))
 
     for idx, base in enumerate(bases):
-        if getBranchOrder(df, idx) != 1 and getBranchOrder(df, idx) != 0:
-            notZeroOneOrderBranches.append(base)
+        if getBranchOrder(df, idx) > 1:
+            notZeroOneOrderBranches.append((base, idx))
 
     radiusCount = 0
     averageRadius = 0
@@ -302,6 +213,26 @@ def runner(uiInit):
     oneOrderRadiusTune = oneRadiusAverage - (oneRadiusAverage/0.8)
     regularOrderRadiusTune = 0.01
 
+    for base, yy in zeroOrderBranches:
+        tree[yy].paint_uniform_color((235/255., 86/255., 0/255.))
+
+    for base, yy in oneOrderBranches:
+        tree[yy].paint_uniform_color((26/255., 153/255., 136/255.))
+
+    for base, yy in notZeroOneOrderBranches:
+        tree[yy].paint_uniform_color((106/255., 172/255., 200/255.))
+
+    treeCentroid = []
+    heightAdjust = 0.05
+    xx = df.x[2]
+    yy = df.y[2]
+    zz = df.z[2]
+    treeCentroid = [xx, yy, zz]
+    ellipsoid = o3d.geometry.TriangleMesh.create_sphere(1)
+    ellipsoid.vertices = o3d.utility.Vector3dVector(np.asarray(ellipsoid.vertices) * np.array([10, 10, 0.1]))
+    ellipsoid = ellipsoid.translate((treeCentroid))
+    scene.add_triangles(o3d.t.geometry.TriangleMesh.from_legacy(ellipsoid))
+    shapeAppend = ellipsoid
 
     remove_idx = []
     for idx, base in enumerate(bases):
@@ -310,44 +241,15 @@ def runner(uiInit):
         cylinders = findCylinders(idx)
         if occupancy.prod():
             for c in cylinders:
-                if c >= idx:
-                        if getBranchOrder(df, idx) == 0:
-                            if getRadius(df, idx) <= zeroRadiusAverage + zeroOrderRadiusTune:
-                                remove_idx.append(c)
-                        elif getBranchOrder(df, idx) == 1:
-                            if getRadius(df, idx) <= (oneRadiusAverage + oneOrderRadiusTune):
-                                remove_idx.append(c)
-                        else:
-                            if getRadius(df, idx) <= (averageRadius + regularOrderRadiusTune):
-                                remove_idx.append(c)
+                remove_idx.append(c)
 
     cutCount = 0
     remove_idx = list(set(remove_idx))
     remove_idx.sort()
     for idx in remove_idx[::-1]: # remove indices in reverse
         cutCount += 1
-        tree[idx].paint_uniform_color((1., 0., 0.))
-        #tree.pop(idx)
-
-    
-    #### PART II - AFTER PRUNING ####
-    # Get hits from rays 
-    zero_aft, primhit_aft = getRayHits(tree, rays)
-    print("After pruning: ", primhit_aft.item())
-    ratio = zero_aft.item() / zero_fore.item()
-
-    # Ratio of the number of zero order branches
-    # hit after and before pruning
-    print(f"ZeroSunRatio: {ratio}")
-
-
-    # for idx, base in enumerate(bases):
-    #     if getBranchOrder(df, idx) == 1:
-    #         tree[idx].paint_uniform_color((0., 0., 0.))
-
-        
-    lineShape = o3d.geometry.LineSet.create_from_triangle_mesh(shapeAppend) # Convert solid sphere to mesh
-    tree.append(lineShape)
+        # tree[idx].paint_uniform_color((1., 0., 0.))
+        tree.pop(idx)
 
     ##Useful Tree Info Printout
     # print("Tree Centroid", treeCentroid)
@@ -368,4 +270,7 @@ def runner(uiInit):
     # print("yoffset", yadd)
     # print("x and y diff", xgap - ygap)
     
+    lineShape = o3d.geometry.LineSet.create_from_triangle_mesh(shapeAppend) # Convert solid sphere to mesh
+    tree.append(lineShape)
+
     o3d.visualization.draw_geometries(tree)
