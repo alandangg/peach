@@ -1,2 +1,2 @@
 # peach
-# Alan Dang, Jun Chuah, Jacob Nguyen
+# Alan Dang, Jun Yi Chuah, Jacob Nguyen, Tenzin Choerab
