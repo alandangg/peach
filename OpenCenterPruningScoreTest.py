@@ -4,9 +4,6 @@ import pandas as pd
 import open3d as o3d
 import copy
 import matplotlib.pyplot as plt
-import sys
-
-
 def getRadius(df, x):
     currentBranch = df['radius (m)'][x]
     return currentBranch
@@ -26,7 +23,7 @@ def getRayHits(primitive_list, rays, show_im = True):
 
 treeDic = {}
 
-file1 = open("pcdPath.txt", "r") 
+file1 = open("pcdPath.txt", "r")
 pcdPath = file1.readline()
 file1 = open("cylinderPath.txt", "r")
 cylinderPath = file1.readline()
@@ -34,11 +31,9 @@ file1 = open("dataPath.txt", "r")
 dataPath = file1.readline()
 file1.close()
 
-
-
-
 df = pd.read_csv(cylinderPath) ## ADJUST THESE FOR DIFFERENT TREES
 treeData = pd.read_csv(dataPath)   ## ADJUST THESE FOR DIFFERENT TREES
+
 
 def findCylinders(index):
         cylinders = []
@@ -52,24 +47,21 @@ for num, val in df['branch'].iteritems():
     else:
         treeDic[val].append(num)
 
-
 def runner(uiInit):
-    
+
     prunemethod = uiInit.prunemethodSelect()
     prunepercentage = uiInit.silderGetter()
 
     print(prunepercentage)
     print(prunemethod)
-
-    
     # Create raycasting scene
     # We will need this later for checking occupancy
     scene = o3d.t.geometry.RaycastingScene()
 
     #largest gap so far is .4ish
-    
-    
-   
+
+
+
     TreeHeight = treeData["Data"][3]
     CrownDiamAve = treeData["Data"][14]
     CrownDiamMax = treeData["Data"][15]
@@ -78,7 +70,7 @@ def runner(uiInit):
     CrownRatio = treeData["Data"][20]
     TrunkLength = treeData["Data"][4]
 
-    
+
     tree = []
     bases = [] # Store the base of the cylinder
     max_branch = df['branch'].max()
@@ -131,7 +123,7 @@ def runner(uiInit):
         x -= pcd_centroid[0]
         y -= pcd_centroid[1]
         z -= pcd_centroid[2]
-        
+
         centroid += [x, y, z]
         cyl_mid = [x + l*a, y + l*b, z + l*c]
         cylinder = cylinder.translate(cyl_mid)
@@ -140,7 +132,7 @@ def runner(uiInit):
         # The first two verts are the centers of the top and bottom base
         dpoints = np.asarray(cylinder.vertices)
         dpoints = dpoints[2:2+resolution,:]
-        ## Store these dpoints in a list that has a one-one correspondance 
+        ## Store these dpoints in a list that has a one-one correspondance
         ## with our tree list
         bases.append(dpoints)
         tree.append(copy.deepcopy(cylinder))
@@ -153,7 +145,7 @@ def runner(uiInit):
     marks = np.linspace(center-width, center+width, res)
     ray_dir = -np.array([center, center, z_ht])
     ray_dir /= np.linalg.norm(ray_dir)
-    
+
     mesh_x, mesh_y = np.meshgrid(marks, marks)
     rays = np.stack((mesh_x,
                      mesh_y,
@@ -168,13 +160,9 @@ def runner(uiInit):
     rays = o3d.core.Tensor(rays, dtype=o3d.core.Dtype.Float32)
 
     #### PART I - BEFORE PRUNING ####
-    #### Get scene hits before pruning 
+    #### Get scene hits before pruning
     zero_fore, primhit_fore = getRayHits(tree, rays)
-    print("Before pruning: ", primhit_fore.item())
-
-
-
-    
+    print("Rays Hits Before Pruning: ", zero_fore.item())
 
     highestx = df['x'].max()
     lowestx = df['x'].min()
@@ -189,7 +177,7 @@ def runner(uiInit):
     xadd = 0
     yadd = 0
 
-    
+
     ## Adjustable Parameters
 
     meshType = "ellipsoid"
@@ -197,7 +185,7 @@ def runner(uiInit):
     if meshType == "cone":
         defaultxscale = 2.3
         defaultyscale = 2.3
-        defaultzscale = 1.7
+        defaultzscale = 1.5
     elif meshType == "ellipsoid":
         defaultxscale = 2.7
         defaultyscale = 2.7
@@ -211,7 +199,7 @@ def runner(uiInit):
     zscaling = 0                ##Higher will shrink ellipsoid lower will increase
     xaddthreshold = 0.3         ##Default 0.3, determines how large of a gap is necessary to start scaling extra in one direction
     yaddthreshold = 0.3         ##Default 0.3, determines how large of a gap is necessary to start scaling extra in one direction
-    
+
     if xgap > ygap:
         if (xgap - ygap) >= xaddthreshold:
             xadd = (xgap - ygap) / 2.2
@@ -224,7 +212,7 @@ def runner(uiInit):
         xx = df.x[2] - pcd_centroid[0] + xcentroidadjust
         yy = df.y[2] - pcd_centroid[1] + ycentroidadjust
         zz = df.z[2] + (TreeHeight/1.4) - pcd_centroid[2] + zcentroidadjust
-        
+
         treeCentroid.append(xx)
         treeCentroid.append(yy)
         treeCentroid.append(zz)
@@ -240,7 +228,7 @@ def runner(uiInit):
         treeCentroid = []
         xx = df.x[2] - pcd_centroid[0] + xcentroidadjust
         yy = df.y[2] - pcd_centroid[1] + ycentroidadjust
-        zz = df.z[2] + (TreeHeight/1.4) - pcd_centroid[2] -0.01 + zcentroidadjust
+        zz = df.z[2] + (TreeHeight/1.4) - pcd_centroid[2] - 0.01 + zcentroidadjust
         treeCentroid.append(xx)
         treeCentroid.append(yy)
         treeCentroid.append(zz)
@@ -261,15 +249,15 @@ def runner(uiInit):
 
     for idx, base in enumerate(bases):
         if getBranchOrder(df, idx) == 0:
-            zeroOrderBranches.append(base)
+            zeroOrderBranches.append((base, idx))
 
     for idx, base in enumerate(bases):
         if getBranchOrder(df, idx) == 1:
-            oneOrderBranches.append(base)
+            oneOrderBranches.append((base, idx))
 
     for idx, base in enumerate(bases):
-        if getBranchOrder(df, idx) != 1 and getBranchOrder(df, idx) != 0:
-            notZeroOneOrderBranches.append(base)
+        if getBranchOrder(df, idx) > 1:
+            notZeroOneOrderBranches.append((base, idx))
 
     radiusCount = 0
     averageRadius = 0
@@ -296,11 +284,23 @@ def runner(uiInit):
         oneRadiusAverage += radius
     oneRadiusAverage = oneRadiusAverage / oneRadiusCount
 
+    prunepercentage = 0.1*(prunepercentage - 40)
+    zeroOrderAggressiveness = prunepercentage    ## Start these at 0 for default, change by positive to increase aggressiveness,
+    firstOrderAggressiveness = prunepercentage   ## and negative increments to decrease aggressiveness. UNCOMMENT
+    regularOrderAggressiveness = prunepercentage ## lines 351 - 353 to get the average radius for each in order to get a gauge of what your increments should be.
 
+    zeroOrderRadiusTune = zeroRadiusAverage - (zeroRadiusAverage/0.8) + zeroOrderAggressiveness
+    oneOrderRadiusTune = oneRadiusAverage - (oneRadiusAverage/0.8) + firstOrderAggressiveness
+    regularOrderRadiusTune = 0.01 + regularOrderAggressiveness
 
-    zeroOrderRadiusTune = zeroRadiusAverage - (zeroRadiusAverage/0.8)
-    oneOrderRadiusTune = oneRadiusAverage - (oneRadiusAverage/0.8)
-    regularOrderRadiusTune = 0.01
+    for base, yy in zeroOrderBranches:
+        tree[yy].paint_uniform_color((235/255., 86/255., 0/255.))
+
+    for base, yy in oneOrderBranches:
+        tree[yy].paint_uniform_color((26/255., 153/255., 136/255.))
+
+    for base, yy in notZeroOneOrderBranches:
+        tree[yy].paint_uniform_color((106/255., 172/255., 200/255.))
 
 
     remove_idx = []
@@ -329,27 +329,25 @@ def runner(uiInit):
         tree[idx].paint_uniform_color((1., 0., 0.))
         #tree.pop(idx)
 
-    
+
+
     #### PART II - AFTER PRUNING ####
-    # Get hits from rays 
+    # Get hits from rays
     zero_aft, primhit_aft = getRayHits(tree, rays)
-    print("After pruning: ", primhit_aft.item())
+    # print("Rays Hit After Pruning: ", zero_aft.item())
     ratio = zero_aft.item() / zero_fore.item()
 
     # Ratio of the number of zero order branches
     # hit after and before pruning
-    print(f"ZeroSunRatio: {ratio}")
+    print(f"ZeroOneHitRatio: {ratio}")
 
 
     # for idx, base in enumerate(bases):
     #     if getBranchOrder(df, idx) == 1:
     #         tree[idx].paint_uniform_color((0., 0., 0.))
 
-        
-    lineShape = o3d.geometry.LineSet.create_from_triangle_mesh(shapeAppend) # Convert solid sphere to mesh
-    tree.append(lineShape)
-
     ##Useful Tree Info Printout
+    # print("tree centroid", treeCentroid)
     # print("Tree Centroid", treeCentroid)
     # print("Tree Height", TreeHeight)
     # print("Average Crown Diameter", CrownDiamAve)
@@ -361,11 +359,13 @@ def runner(uiInit):
     # print("Y Gap", ygap)
     # print("Trunk Length", TrunkLength)
     # print("Total Cuts Performed", cutCount)
-    # print("Zero Order Average Radius", zeroRadiusAverage)
-    # print("One Order Average radius", oneRadiusAverage)
-    # print("Average Branch Radius", averageRadius)
+    print("Zero Order Average Radius", zeroRadiusAverage)
+    print("One Order Average radius", oneRadiusAverage)
+    print("Average Branch Radius", averageRadius)
     # print("xoffset", xadd)
     # print("yoffset", yadd)
     # print("x and y diff", xgap - ygap)
-    
+
+    lineShape = o3d.geometry.LineSet.create_from_triangle_mesh(shapeAppend) # Convert solid sphere to mesh
+    tree.append(lineShape)
     o3d.visualization.draw_geometries(tree)

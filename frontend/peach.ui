@@ -168,12 +168,12 @@
        </item>
        <item>
         <property name="text">
-         <string>Distance</string>
+         <string>Distance (future implementation)</string>
         </property>
        </item>
        <item>
         <property name="text">
-         <string>Height</string>
+         <string>Height (future implentation)</string>
         </property>
        </item>
       </widget>
