@@ -4,6 +4,9 @@ import pandas as pd
 import open3d as o3d
 import copy
 import matplotlib.pyplot as plt
+import sys
+
+
 def getRadius(df, x):
     currentBranch = df['radius (m)'][x]
     return currentBranch
@@ -38,15 +41,19 @@ for num, val in df['branch'].iteritems():
     else:
         treeDic[val].append(num)
 
-if __name__ == '__main__':
+
+
+def runner(uiInit):
+    
+    print(uiInit.prunemethodSelect())
     # Create raycasting scene
     # We will need this later for checking occupancy
     scene = o3d.t.geometry.RaycastingScene()
 
     #largest gap so far is .4ish
-
     
-
+    
+   
     TreeHeight = treeData["Data"][3]
     CrownDiamAve = treeData["Data"][14]
     CrownDiamMax = treeData["Data"][15]
