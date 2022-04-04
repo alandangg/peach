@@ -1,5 +1,5 @@
-# peach
-# Alan Dang, Jun Yi Chuah, Jacob Nguyen, Tenzin Choerab
+# peach  
+Alan Dang, Jun Yi Chuah, Jacob Nguyen, Tenzin Choerab
 
 # In order to use the software:
 # 1. Set your absolute path for cylinderPath.txt, dataPath.txt, and pcdPath.txt to the appropriate files.
