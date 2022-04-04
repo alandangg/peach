@@ -4,7 +4,7 @@ Alan Dang, Jun Yi Chuah, Jacob Nguyen, Tenzin Choerab <br> <br>
 # Setting up 
 1. Set your **absolute path** for cylinderPath.txt, dataPath.txt, and pcdPath.txt to the appropriate files:
    - cylinderPath requires a CylinderData.csv  
-   - dataPath requires Data.csv
+   - dataPath requires Data.csv (Optional)
    - pcdPath requires .xyzrgb
 2. Make sure you are running on python 3.8 for the most stable experience. 
 3. Run the frontend.py and you will be prompted with a gui. Load all the files and select the corresponding files, prune percentage, and pruning method. Then click prune! <br><br>
