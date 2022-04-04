@@ -62,12 +62,8 @@ def get_rotation_mat(direction, up=[0, 0, 1]):
 
 if __name__ == '__main__':
 
-    treeData = pd.read_csv(os.getcwd() + "\\Data\\germ3a\\treedata_myTree3a__t1_m1.txt", sep='\t') # Data marwan pulled from treeQSM somewhere, contains data on height and stuff
     df = pd.read_csv("Data/germ3a/germ3a.csv") #change to appropriate data for tree
     pcdFile = 'Data/germ3a/germ3a_ds_0025m_2021.txt'
-
-    TreeHeight = treeData.values[2][1]
-    BranchArea = treeData.values[9][1]
 
     orderBranchCylDic = {} # { Order : {BranchIdx: {Total cylinders} } }
     orderBranchMidDic = {} # { Order : {BranchIdx: {Midpoint of first cylinder base} } }
